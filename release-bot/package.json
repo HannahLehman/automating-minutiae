@@ -1,0 +1,22 @@
+{
+  "name": "release-bot",
+  "version": "1.0.0",
+  "description": "A simple bot to send daily Release Testing Jira updates.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "api-testrail": "^1.2.3",
+    "axios": "^0.19.2",
+    "bot": "0.0.3",
+    "jira-connector": "^3.1.0",
+    "moment": "^2.27.0",
+    "node-slack-upload": "^2.0.0",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.5",
+    "sync-request": "^6.1.0"
+  }
+}

@@ -1,0 +1,72 @@
+# This file defines a child-pipeline, which is triggered off the release_ops job in ci/.gitlab-ci.yml
+stages:
+  - block
+  - semver
+  - close-tickets
+  - create-tickets
+  - cut-release
+
+kick_ops:
+  stage: block
+  script:
+    - echo 'OK, HERE WE GO! HOLD ON TO YOUR BUTTS!'
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "release-web"'
+      when: manual
+
+update_version_numbers:
+  stage: semver
+  image: $RUNNER_IMAGE_PATH
+  script:
+    - git fetch --tags
+    - ci/semver.sh minor
+  rules:
+    - if: "$CI_COMMIT_BRANCH == 'release-web' && $CI_COMMIT_MESSAGE =~ /^merge branch 'master'/i"
+      when: always
+    - when: never
+
+update_hotfix_version:
+  stage: semver
+  image: $RUNNER_IMAGE_PATH
+  script:
+    - git fetch --tags
+    - ci/semver.sh patch
+  rules:
+    - if: "$CI_COMMIT_BRANCH == 'release-web' && $CI_COMMIT_MESSAGE =~ /^*hotfix*/i"
+      when: always
+    - when: never
+
+close_jira_release:
+  image: $RUNNER_IMAGE_PATH
+  stage: close-tickets
+  script:
+    - python3.7 ci/close_release.py
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "release-web"'
+      when: always
+    - when: never
+
+create_jira_release:
+  image: $RUNNER_IMAGE_PATH
+  stage: create-tickets
+  needs:
+    - close_jira_release
+  script:
+    - python3.7 ci/create_releases.py
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "release-web" && $CI_COMMIT_MESSAGE !~ /^*hotfix*/i'
+      when: always
+
+create_release_cut:
+  image: $RUNNER_IMAGE_PATH
+  stage: cut-release
+  variables:
+    GIT_STRATEGY: fetch
+    GIT_DEPTH: 50
+  script:
+    - ci/cut_release.sh
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "release-web" && $CI_COMMIT_MESSAGE !~ /^*hotfix*/i'
+      when: manual
+    - when: never
+
